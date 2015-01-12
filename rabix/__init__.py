@@ -2,7 +2,7 @@ VERSION = '0.2.0'
 CONFIG = {
     'engine': {
         'class': 'rabix.runtime.engine.MultiprocessingEngine',
-        'ram_mb': 7 * 1024,
+        'ram_mb': 256 * 1024,
     },
     'runners': {
         'InputTask': 'rabix.runtime.builtins.io.InputRunner',

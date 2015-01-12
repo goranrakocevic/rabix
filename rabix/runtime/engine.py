@@ -176,7 +176,9 @@ class AsyncEngine(Engine):
             self._run_ready_tasks()
             to_remove = []
             for ndx, item in enumerate(self.running):
+                log.debug('Checking result for task %s', item[1])
                 if self.check_async_result_ready(item[2]):
+                    log.debug('Ready! Processing result for %s', item[1])
                     self.process_result(*item)
                     to_remove.append(ndx)
             if to_remove:

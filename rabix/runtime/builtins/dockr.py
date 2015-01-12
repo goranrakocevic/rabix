@@ -2,6 +2,8 @@ import logging
 import os
 import signal
 import copy
+import time
+import random
 
 import docker
 
@@ -171,7 +173,9 @@ class Container(object):
             self.stop()
 
         with handle_signal(handler, *kill_on):
+            log.debug('Waiting for container...')
             self.docker.wait(self.container)
+            log.debug('Container done.')
         return self
 
     def is_success(self):
@@ -182,7 +186,10 @@ class Container(object):
         self._check_container_ready()
         self.wait()
         if not success_only or self.is_success():
-            self.docker.remove_container(self.container)
+            try:
+                self.docker.remove_container(self.container)
+            except:
+                log.exception('Failed to remove container')
         return self
 
     def stop(self, nice=False):
@@ -207,8 +214,14 @@ class Container(object):
     def run(self, command):
         log.info("Running command %s", command)
         self.container = self.docker.create_container_from_config(dict(self.config, Cmd=command))
-        self.docker.start(container=self.container, binds=self.binds)
-        return self
+        for i in range(5):
+            try:
+                self.docker.start(container=self.container, binds=self.binds)
+                return self
+            except:
+                log.exception('Failed starting container')
+                time.sleep(1 + 5 * random.random())
+        raise Exception('Tried five times, but failed to run command %s')
 
     def run_and_print(self, command):
         self.run(command)
@@ -251,6 +264,7 @@ def get_image(client, ref=None, repo=None, tag=None, id=None, pull_attempts=1):
     """
     ref = ref or {}
     repo, tag, image_id = ref.get('image_repo', repo), ref.get('image_tag', tag), ref.get('image_id', id)
+    print ref
     if not image_id and not repo:
         raise ResourceUnavailable("App don't have Docker repository name or image ID")
     elif not image_id and not tag:
